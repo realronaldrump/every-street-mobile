@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './FileUploadComponent.css';
+import GpxParser from 'gpxparser'; // Import the gpxparser library
 
 function FileUploadComponent({ onFileUploaded, onFileError }) {
   const [fileName, setFileName] = useState('');
@@ -17,21 +18,51 @@ function FileUploadComponent({ onFileUploaded, onFileError }) {
 
     reader.onload = (e) => {
       try {
-        // For now, we only parse GeoJSON
+        const fileContent = e.target.result;
         if (file.name.endsWith('.geojson') || file.type === 'application/geo+json') {
-          const geojsonData = JSON.parse(e.target.result);
+          const geojsonData = JSON.parse(fileContent);
           if (geojsonData && geojsonData.features && Array.isArray(geojsonData.features)) {
-            // Basic validation: ensure it's a FeatureCollection with features
             onFileUploaded(geojsonData, file.name);
           } else {
             throw new Error('Invalid GeoJSON structure. Expected a FeatureCollection.');
           }
         } else if (file.name.endsWith('.gpx')) {
-          // Placeholder for GPX parsing
-          // We'll add gpxParser logic here in a later step
-          console.log('GPX file selected, parsing not yet implemented in this step.');
-          onFileError(`GPX parsing for "${file.name}" is not implemented yet.`);
-          // For now, treat as an error or unhandled file
+          const gpx = new GpxParser();
+          gpx.parse(fileContent);
+
+          if (!gpx.tracks || gpx.tracks.length === 0) {
+            throw new Error('No tracks found in GPX file.');
+          }
+
+          // Convert GPX tracks to GeoJSON FeatureCollection
+          const features = gpx.tracks.flatMap(track => {
+            return track.segments.map(segment => {
+              // Create a LineString feature for each segment
+              const coordinates = segment.points.map(p => [p.lon, p.lat]);
+              return {
+                type: 'Feature',
+                geometry: {
+                  type: 'LineString',
+                  coordinates: coordinates,
+                },
+                properties: {
+                  name: track.name || `Track segment ${Date.now()}`, // Use track name or a default
+                  // Add any other relevant properties from the GPX track/segment if needed
+                },
+              };
+            });
+          });
+
+          if (features.length === 0) {
+            throw new Error('No valid LineString segments could be extracted from the GPX file.');
+          }
+
+          const geojsonData = {
+            type: 'FeatureCollection',
+            features: features,
+          };
+          onFileUploaded(geojsonData, file.name);
+
         } else {
           throw new Error('Unsupported file type. Please upload a GeoJSON or GPX file.');
         }
@@ -52,7 +83,6 @@ function FileUploadComponent({ onFileUploaded, onFileError }) {
     } else {
         onFileError('Unsupported file type. Please upload a GeoJSON or GPX file.');
         setFileName('');
-        // Clear the file input
         event.target.value = null;
     }
   };
