@@ -1,3 +1,4 @@
+/* global process */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import FileUploadComponent from './components/FileUploadComponent';
@@ -5,7 +6,8 @@ import MapComponent from './components/MapComponent';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as turf from '@turf/turf';
 
-const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoicmVhbHJvbmFsZHJ1bXAiLCJhIjoiY204eXBvMzRhMDNubTJrb2NoaDIzN2dodyJ9.3Hnv3_ps0T7YS8cwSE3XKA'; // Your Mapbox token
+// Access the token from environment variables
+const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
 // Threshold for considering the end of a segment as "reached" (in feet)
 const COMPLETION_THRESHOLD_FEET = 100; // Approximately 30 meters
