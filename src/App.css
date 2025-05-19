@@ -1,190 +1,490 @@
+/* Modern iOS-like Navigation App Styling */
+:root {
+  --primary-color: #007AFF; /* iOS blue */
+  --secondary-color: #34C759; /* iOS green */
+  --danger-color: #FF3B30; /* iOS red */
+  --gray-1: #F2F2F7; /* iOS light gray */
+  --gray-2: #E5E5EA; /* iOS medium light gray */
+  --gray-3: #D1D1D6; /* iOS medium gray */
+  --gray-4: #C7C7CC; /* iOS medium-dark gray */
+  --gray-5: #8E8E93; /* iOS dark gray */
+  --dark-transparent: rgba(0, 0, 0, 0.7);
+  --light-transparent: rgba(255, 255, 255, 0.9);
+  --font-regular: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-regular);
+  overflow: hidden;
+  background-color: black;
+}
+
 .App {
   text-align: center;
-  display: flex;
-  flex-direction: column;
   height: 100vh;
   width: 100vw;
+  position: relative;
+  background-color: black;
+  color: white;
   overflow: hidden;
 }
 
-.App-header {
-  background-color: #282c34;
-  padding: 10px; /* Adjusted padding */
-  color: white;
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  z-index: 10;
+/* Main map container that holds all UI elements */
+.map-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
-.App-header h1 {
-  margin: 0 0 8px 0; /* Adjusted margin */
-  font-size: 1.4rem; /* Adjusted font size */
-}
-
-/* Status bar within the header */
-.status-bar-header {
-  padding: 5px;
-  background-color: rgba(255,255,255,0.1); /* Light background within dark header */
-  border-radius: 4px;
-  margin-top: 8px;
-  font-size: 0.8rem;
-  text-align: center; /* Center text in header status bar */
-}
-
-.status-bar-header p {
-  margin: 0;
-  padding: 2px 5px;
-}
-
-.error-message { /* This class might be used in FileUpload or here */
-  color: #ff6b6b; /* Brighter red for errors */
-  font-weight: bold;
-}
-
-
-.App-main-content {
-  flex-grow: 1; /* This is key: makes the main content fill remaining space */
-  position: relative; /* Important for the map component to size correctly */
-  background-color: #e0e0e0; /* Fallback background if map doesn't load */
-  overflow: hidden; /* Ensure no scrollbars on this container itself */
-  display: flex; /* Added to make child (map or placeholder) fill height/width */
-  flex-direction: column; /* Stack children vertically */
-}
-
-/* New layout container for map and instructions */
-.layout-container {
+/* Top navigation bar with app title and location button */
+.nav-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
   display: flex;
-  flex-direction: row; /* Side-by-side by default */
-  flex-grow: 1; /* Takes up available space in App-main-content */
-  overflow: hidden; /* Prevent internal scrolling from breaking layout */
-  height: 100%; /* Ensure it fills the main content area */
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Style for when Mapbox token is missing */
-.map-placeholder {
+.nav-header-content {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   justify-content: center;
-  align-items: center;
-  height: 100%;
-  background-color: #333;
-  color: white;
-  padding: 20px;
-  box-sizing: border-box;
 }
 
-.map-placeholder p {
-  margin-bottom: 10px;
-}
-
-.actions-bar {
-  margin-top: 10px;
-  margin-bottom: 5px;
-}
-
-.actions-bar button {
-  padding: 8px 15px;
-  font-size: 0.9rem;
-  background-color: #4CAF50; /* Green */
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.actions-bar button:hover:not(:disabled) {
-  background-color: #45a049;
-}
-
-.actions-bar button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.map-area {
-  flex-grow: 1; /* Map takes remaining space */
-  height: 100%; /* Full height of its container */
-  position: relative; /* For map library positioning */
-  display: flex; /* Ensure map canvas inside fills this */
-  background-color: #222; /* Dark fallback if map doesn't load */
-}
-
-/* Remove previous .segments-info and .status-bar styles from App.css if they were specific to the old layout,
-   or adapt them if you want to keep some raw data display for debugging elsewhere.
-   The FileUploadComponent.css handles its own styling.
-   The MapComponent.css handles its own styling.
-*/
-
-.instructions-panel {
-  width: 320px; /* Adjust width as desired */
-  flex-shrink: 0; /* Prevent shrinking */
-  height: 100%; /* Full height of layout-container */
-  overflow-y: auto; /* Scroll for overflow */
-  background-color: #f8f9fa; /* Light background */
-  border-left: 1px solid #dee2e6; /* Separator line */
-  padding: 15px;
-  box-sizing: border-box;
-  color: #343a40;
-}
-
-.instructions-panel h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.2rem;
-  color: #212529;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.instructions-panel ul {
-  list-style-type: none;
-  padding: 0;
+.nav-header h1 {
   margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
 }
 
-.instructions-panel li {
-  padding: 12px 0;
-  border-bottom: 1px solid #e9ecef;
-  font-size: 0.9rem;
+.nav-header .filename {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+/* Current location button */
+.current-location-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.current-location-button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.current-location-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Error and status message displays */
+.status-overlay {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  background-color: var(--dark-transparent);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  padding: 12px 20px;
+  border-radius: 8px;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.error-message {
+  color: var(--danger-color);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.status-message {
+  color: white;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Main navigation card showing the next maneuver */
+.navigation-card {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 400px;
+  background-color: var(--primary-color);
+  border-radius: 14px;
+  overflow: hidden;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  z-index: 15;
+}
+
+.next-maneuver {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 12px 16px;
+}
+
+.maneuver-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.distance-to-maneuver {
+  font-size: 24px;
+  font-weight: 600;
+  flex-grow: 1;
+  text-align: right;
+}
+
+.instruction-text {
+  padding: 16px;
+  font-size: 18px;
+  font-weight: 500;
+  text-align: left;
   line-height: 1.4;
 }
 
-.instructions-panel li:last-child {
-  border-bottom: none;
+.panel-toggle {
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
 }
 
-.instructions-panel .maneuver {
-  display: block;
-  font-weight: 600; /* Slightly bolder */
-  color: #007bff; /* Bootstrap primary blue */
-  margin-bottom: 5px;
-  text-transform: capitalize;
+.panel-toggle svg {
+  opacity: 0.7;
 }
 
-.instructions-panel .details {
-  display: block;
-  font-size: 0.8rem;
-  color: #6c757d; /* Bootstrap muted text color */
-  margin-top: 5px;
+/* Full navigation panel with all turn-by-turn instructions */
+.navigation-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 70vh;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  z-index: 20;
+  box-shadow: 0px -3px 15px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
+  color: #222;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-2);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+}
+
+.panel-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--gray-5);
+}
+
+.panel-close:hover {
+  background-color: var(--gray-1);
+}
+
+.instructions-list {
+  padding: 8px 0;
+  overflow-y: auto;
+  max-height: calc(70vh - 70px);
+}
+
+.instruction-item {
+  display: flex;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-2);
+  text-align: left;
+}
+
+.instruction-item.current {
+  background-color: rgba(0, 122, 255, 0.08);
+}
+
+.instruction-icon {
+  width: 32px;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instruction-content {
+  flex-grow: 1;
+}
+
+.instruction-main {
+  font-size: 16px;
+  color: #222;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.instruction-detail {
+  font-size: 14px;
+  color: var(--gray-5);
+}
+
+/* Action buttons container */
+.action-buttons {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+  width: 90%;
+  max-width: 400px;
+}
+
+.route-button {
+  flex-grow: 2;
+  padding: 14px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s, transform 0.2s;
+  outline: none;
+}
+
+.route-button:hover:not(:disabled) {
+  background-color: #0063cc;
+  transform: translateY(-2px);
+}
+
+.route-button:disabled {
+  background-color: var(--gray-4);
+  color: var(--gray-2);
+  transform: none;
+  cursor: not-allowed;
+}
+
+.upload-button {
+  flex-grow: 1;
+  padding: 14px;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  outline: none;
+}
+
+.upload-button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Spinner for loading states */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Upload overlay for file selection */
+.upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.upload-container {
+  background-color: var(--light-transparent);
+  border-radius: 14px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  color: #111;
+}
+
+.upload-container h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111;
+}
+
+.close-upload-button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background-color: var(--gray-2);
+  color: #222;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.close-upload-button:hover {
+  background-color: var(--gray-3);
+}
+
+/* Progress indicator for completed streets */
+.progress-indicator {
+  position: absolute;
+  bottom: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 400px;
+  background-color: rgba(0, 0, 0, 0.65);
+  border-radius: 8px;
+  padding: 8px 12px;
+  z-index: 5;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.progress-text {
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: white;
+}
+
+.progress-bar-container {
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--secondary-color);
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
 /* Responsive adjustments for smaller screens */
 @media (max-width: 768px) {
-  .layout-container {
-    flex-direction: column; /* Stack map and instructions vertically */
+  .navigation-panel {
+    max-height: 80vh;
   }
-
-  .instructions-panel {
-    width: 100%; /* Full width on small screens */
-    height: auto; /* Adjust height automatically */
-    max-height: 45vh; /* Limit height to prevent excessive scrolling for page */
-    border-left: none;
-    border-top: 1px solid #dee2e6; /* Separator on top */
+  
+  .instructions-list {
+    max-height: calc(80vh - 70px);
   }
-
-  .map-area {
-    height: 55vh; /* Give map a fixed portion of the screen */
-     min-height: 250px; /* Ensure map is not too small */
+  
+  .panel-header {
+    padding: 14px 16px;
+  }
+  
+  .instruction-item {
+    padding: 14px 16px;
+  }
+  
+  .navigation-card {
+    bottom: 80px;
+  }
+  
+  .progress-indicator {
+    bottom: 70px;
+  }
+  
+  .action-buttons {
+    bottom: 16px;
   }
 }

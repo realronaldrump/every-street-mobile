@@ -260,57 +260,218 @@ function App() {
     prevSegmentsRef.current = segments;
   }, [segments]);
 
+  // Get the next instruction to display prominently
+  const getNextInstruction = () => {
+    if (!routeInstructions || routeInstructions.length === 0) return null;
+    return routeInstructions[0];
+  };
+
+  const nextInstruction = getNextInstruction();
+
+  // Get the distance to next maneuver in human-readable format
+  const getDistanceText = (distance) => {
+    if (!distance) return '';
+    const distanceFeet = Math.round(distance * 3.28084);
+    if (distanceFeet > 5280) {
+      return `${(distanceFeet / 5280).toFixed(1)} mi`;
+    } else {
+      return `${distanceFeet} ft`;
+    }
+  };
+
+  // State for the navigation panel (expanded/collapsed)
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+
+  // Function to toggle panel expansion
+  const togglePanel = () => {
+    setIsPanelExpanded(!isPanelExpanded);
+  };
+
+  // Handle file upload overlay
+  const [showFileUpload, setShowFileUpload] = useState(!segments);
+  
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Every Street Mobile</h1>
-        <FileUploadComponent
-          onFileUploaded={handleFileUploaded}
-          onFileError={handleFileError}
+      <div className="map-container">
+        <MapComponent
+          segments={segments}
+          userLocation={userLocation}
+          routeGeoJSON={currentRoute}
+          completedSegmentIds={completedSegmentIds}
+          targetSegmentId={targetSegmentData ? targetSegmentData.id : null}
+          isNewSegmentsData={segments !== prevSegmentsRef.current && segments !== null}
         />
-        <div className="actions-bar">
-          <button 
-            onClick={calculateRouteForUndrivenSegments}
-            disabled={!segments || !userLocation || isRouting || !MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE' || (segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0)}
-          >
-            {/* Text logic remains similar, reflects current state */}
-            {isRouting ? 'Routing...' : (segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0 ? 'All Done!' : 'Plan Full Route')} 
-          </button>
-        </div>
-        <div className="status-bar-header">
-          <p>{statusMessage}</p>
-          {uploadError && <p className="error-message">Upload Error: {uploadError}</p>}
-        </div>
-      </header>
-      <main className="App-main-content">
-        {/* This new div will be the flex container for map and instructions */}
-        <div className="layout-container">
-          <div className="map-area">
-            <MapComponent
-              segments={segments}
-              userLocation={userLocation}
-              routeGeoJSON={currentRoute}
-              completedSegmentIds={completedSegmentIds}
-              targetSegmentId={targetSegmentData ? targetSegmentData.id : null}
-              isNewSegmentsData={segments !== prevSegmentsRef.current && segments !== null}
-            />
+        
+        {/* Top navigation bar */}
+        <div className="nav-header">
+          <div className="nav-header-content">
+            <h1>Every Street</h1>
+            {currentFileName && <span className="filename">{currentFileName}</span>}
           </div>
-          {routeInstructions.length > 0 && (
-            <div className="instructions-panel">
-              <h3>Turn-by-Turn</h3>
-              <ul>
-                {routeInstructions.map((step, index) => (
-                  <li key={index}>
-                    <span className="maneuver">{step.maneuver.type} ({step.maneuver.modifier})</span>
-                    {step.instruction}
-                    <span className="details">{Math.round(step.distance * 3.28084)} ft, {Math.round(step.duration)} s</span>
-                  </li>
-                ))}
-              </ul>
+          {userLocation && (
+            <div className="current-location-button" onClick={() => document.getElementById('recenter-map').click()}>
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" fill="currentColor"/>
+              </svg>
             </div>
           )}
         </div>
-      </main>
+        
+        {/* Status and error message overlay */}
+        {(uploadError || (!segments && !showFileUpload)) && (
+          <div className="status-overlay">
+            {uploadError ? (
+              <div className="error-message">Upload Error: {uploadError}</div>
+            ) : (
+              <div className="status-message">{statusMessage}</div>
+            )}
+          </div>
+        )}
+        
+        {/* Main navigation UI */}
+        {nextInstruction && !isPanelExpanded && (
+          <div className="navigation-card">
+            <div className="next-maneuver">
+              <div className="maneuver-icon">
+                {/* Icon based on maneuver type */}
+                {nextInstruction.maneuver.type === 'turn' && (
+                  <svg viewBox="0 0 24 24" width="40" height="40">
+                    <path d={nextInstruction.maneuver.modifier.includes('right') ? 
+                      "M9 5.5c0 .28.22.5.5.5h6.5a1 1 0 0 1 1 1v10.5h-2l3 3 3-3h-2V7c0-1.1-.9-2-2-2h-6.5a.5.5 0 0 0-.5.5z" : 
+                      "M15 5.5c0 .28-.22.5-.5.5H8a1 1 0 0 0-1 1v10.5h2l-3 3-3-3h2V7c0-1.1.9-2 2-2h6.5c.28 0 .5.22.5.5z"} 
+                      fill="white" transform={nextInstruction.maneuver.modifier === 'slight right' ? "rotate(-45, 12, 12)" : 
+                      nextInstruction.maneuver.modifier === 'slight left' ? "rotate(45, 12, 12)" : ""}
+                    />
+                  </svg>
+                )}
+                {nextInstruction.maneuver.type === 'continue' && (
+                  <svg viewBox="0 0 24 24" width="40" height="40">
+                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" fill="white"/>
+                  </svg>
+                )}
+                {/* Additional icons for other maneuver types could be added */}
+              </div>
+              <div className="distance-to-maneuver">
+                {getDistanceText(nextInstruction.distance)}
+              </div>
+            </div>
+            <div className="instruction-text">
+              {nextInstruction.instruction}
+            </div>
+            <div className="panel-toggle" onClick={togglePanel}>
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+        )}
+        
+        {/* Expanded navigation panel with all instructions */}
+        {isPanelExpanded && (
+          <div className="navigation-panel">
+            <div className="panel-header">
+              <h3>Turn-by-Turn Directions</h3>
+              <div className="panel-close" onClick={togglePanel}>
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" fill="currentColor"/>
+                </svg>
+              </div>
+            </div>
+            <div className="instructions-list">
+              {routeInstructions.map((step, index) => (
+                <div key={index} className={`instruction-item ${index === 0 ? 'current' : ''}`}>
+                  <div className="instruction-icon">
+                    {/* Simplified icon based on maneuver type */}
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                      <path d={step.maneuver.type === 'turn' && step.maneuver.modifier.includes('right') ? 
+                        "M9 5.5c0 .28.22.5.5.5h6.5a1 1 0 0 1 1 1v10.5h-2l3 3 3-3h-2V7c0-1.1-.9-2-2-2h-6.5a.5.5 0 0 0-.5.5z" : 
+                        "M15 5.5c0 .28-.22.5-.5.5H8a1 1 0 0 0-1 1v10.5h2l-3 3-3-3h2V7c0-1.1.9-2 2-2h6.5c.28 0 .5.22.5.5z"} 
+                        fill={index === 0 ? "#007AFF" : "#666"}
+                      />
+                    </svg>
+                  </div>
+                  <div className="instruction-content">
+                    <div className="instruction-main">{step.instruction}</div>
+                    <div className="instruction-detail">{getDistanceText(step.distance)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Action buttons */}
+        <div className="action-buttons">
+          <button 
+            className={`route-button ${isRouting ? 'loading' : ''}`}
+            onClick={calculateRouteForUndrivenSegments}
+            disabled={!segments || !userLocation || isRouting || !MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE' || (segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0)}
+          >
+            {isRouting ? (
+              <div className="spinner"></div>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M21.71 11.29l-9-9a.996.996 0 00-1.41 0l-9 9a.996.996 0 000 1.41l9 9c.39.39 1.02.39 1.41 0l9-9a.996.996 0 000-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z" fill="currentColor"/>
+                </svg>
+                {segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0 ? 'All Done!' : 'Start Navigation'}
+              </>
+            )}
+          </button>
+          
+          <button 
+            className="upload-button" 
+            onClick={() => setShowFileUpload(true)}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" fill="currentColor"/>
+            </svg>
+            Load Map
+          </button>
+        </div>
+        
+        {/* File upload overlay */}
+        {showFileUpload && (
+          <div className="upload-overlay">
+            <div className="upload-container">
+              <h2>Load Your Street Map</h2>
+              <FileUploadComponent
+                onFileUploaded={(data, fileName) => {
+                  handleFileUploaded(data, fileName);
+                  setShowFileUpload(false);
+                }}
+                onFileError={handleFileError}
+              />
+              {segments && (
+                <button 
+                  className="close-upload-button"
+                  onClick={() => setShowFileUpload(false)}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Progress indicator */}
+        {segments && (
+          <div className="progress-indicator">
+            <div className="progress-text">
+              {completedSegmentIds.size} of {segments.features.length} segments completed
+            </div>
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar-fill" 
+                style={{width: `${segments.features.length > 0 ? (completedSegmentIds.size / segments.features.length) * 100 : 0}%`}}
+              ></div>
+            </div>
+          </div>
+        )}
+        
+        {/* Hidden button for map recenter - triggered by the location button */}
+        <button id="recenter-map" style={{display: 'none'}}></button>
+      </div>
     </div>
   );
 }
