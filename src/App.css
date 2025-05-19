@@ -51,6 +51,15 @@
   flex-direction: column; /* Stack children vertically */
 }
 
+/* New layout container for map and instructions */
+.layout-container {
+  display: flex;
+  flex-direction: row; /* Side-by-side by default */
+  flex-grow: 1; /* Takes up available space in App-main-content */
+  overflow: hidden; /* Prevent internal scrolling from breaking layout */
+  height: 100%; /* Ensure it fills the main content area */
+}
+
 /* Style for when Mapbox token is missing */
 .map-placeholder {
   display: flex;
@@ -94,10 +103,11 @@
 }
 
 .map-area {
-  flex: 1 1 0%;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
+  flex-grow: 1; /* Map takes remaining space */
+  height: 100%; /* Full height of its container */
+  position: relative; /* For map library positioning */
+  display: flex; /* Ensure map canvas inside fills this */
+  background-color: #222; /* Dark fallback if map doesn't load */
 }
 
 /* Remove previous .segments-info and .status-bar styles from App.css if they were specific to the old layout,
@@ -107,10 +117,74 @@
 */
 
 .instructions-panel {
-  flex-shrink: 0;
-  background: #fff;
-  border-top: 1px solid #ccc;
-  max-height: 40vh;
-  overflow-y: auto;
-  padding: 10px 0;
+  width: 320px; /* Adjust width as desired */
+  flex-shrink: 0; /* Prevent shrinking */
+  height: 100%; /* Full height of layout-container */
+  overflow-y: auto; /* Scroll for overflow */
+  background-color: #f8f9fa; /* Light background */
+  border-left: 1px solid #dee2e6; /* Separator line */
+  padding: 15px;
+  box-sizing: border-box;
+  color: #343a40;
+}
+
+.instructions-panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  color: #212529;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.instructions-panel ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.instructions-panel li {
+  padding: 12px 0;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.instructions-panel li:last-child {
+  border-bottom: none;
+}
+
+.instructions-panel .maneuver {
+  display: block;
+  font-weight: 600; /* Slightly bolder */
+  color: #007bff; /* Bootstrap primary blue */
+  margin-bottom: 5px;
+  text-transform: capitalize;
+}
+
+.instructions-panel .details {
+  display: block;
+  font-size: 0.8rem;
+  color: #6c757d; /* Bootstrap muted text color */
+  margin-top: 5px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .layout-container {
+    flex-direction: column; /* Stack map and instructions vertically */
+  }
+
+  .instructions-panel {
+    width: 100%; /* Full width on small screens */
+    height: auto; /* Adjust height automatically */
+    max-height: 45vh; /* Limit height to prevent excessive scrolling for page */
+    border-left: none;
+    border-top: 1px solid #dee2e6; /* Separator on top */
+  }
+
+  .map-area {
+    height: 55vh; /* Give map a fixed portion of the screen */
+     min-height: 250px; /* Ensure map is not too small */
+  }
 }

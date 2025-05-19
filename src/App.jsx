@@ -283,28 +283,33 @@ function App() {
         </div>
       </header>
       <main className="App-main-content">
-        <div className="map-area">
-          <MapComponent
-            segments={segments}
-            userLocation={userLocation}
-            routeGeoJSON={currentRoute}
-            completedSegmentIds={completedSegmentIds} // Still pass these
-            targetSegmentId={targetSegmentData ? targetSegmentData.id : null} // Still pass this
-            isNewSegmentsData={segments !== prevSegmentsRef.current && segments !== null}
-          />
-        </div>
-        {routeInstructions.length > 0 && (
-          <div className="instructions-panel">
-            <h3>Turn-by-Turn</h3>
-            <ul>
-              {routeInstructions.map((step, index) => (
-                <li key={index}>
-                  {step.instruction} ({Math.round(step.distance * 3.28084)} feet, {Math.round(step.duration)} seconds)
-                </li>
-              ))}
-            </ul>
+        {/* This new div will be the flex container for map and instructions */}
+        <div className="layout-container">
+          <div className="map-area">
+            <MapComponent
+              segments={segments}
+              userLocation={userLocation}
+              routeGeoJSON={currentRoute}
+              completedSegmentIds={completedSegmentIds}
+              targetSegmentId={targetSegmentData ? targetSegmentData.id : null}
+              isNewSegmentsData={segments !== prevSegmentsRef.current && segments !== null}
+            />
           </div>
-        )}
+          {routeInstructions.length > 0 && (
+            <div className="instructions-panel">
+              <h3>Turn-by-Turn</h3>
+              <ul>
+                {routeInstructions.map((step, index) => (
+                  <li key={index}>
+                    <span className="maneuver">{step.maneuver.type} ({step.maneuver.modifier})</span>
+                    {step.instruction}
+                    <span className="details">{Math.round(step.distance * 3.28084)} ft, {Math.round(step.duration)} s</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
