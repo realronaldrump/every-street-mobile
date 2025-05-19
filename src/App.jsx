@@ -1,4 +1,3 @@
-/* global process */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import FileUploadComponent from './components/FileUploadComponent';
@@ -6,23 +5,25 @@ import MapComponent from './components/MapComponent';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as turf from '@turf/turf';
 
-// Access the token from environment variables
-const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
+// Access the token from environment variables (Vite-specific)
+const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
 // Threshold for considering the end of a segment as "reached" (in feet)
 const COMPLETION_THRESHOLD_FEET = 100; // Approximately 30 meters
 
-if (MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE') { // This check is for the placeholder
+if (!MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE') { // Check if token is missing or is the placeholder
   console.warn(
     'Mapbox Access Token for Directions API is not set in App.jsx. Routing will not work.'
   );
 }
 
 function App() {
+  // Renamed from comprehensiveRoute, comprehensiveRouteInstructions to align with existing state
+  // These will store the route for all undriven segments
   const [segments, setSegments] = useState(null); 
   const [currentFileName, setCurrentFileName] = useState('');
   const [uploadError, setUploadError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('Please upload a file to begin.');
+  const [statusMessage, setStatusMessage] = useState('Acquiring location and awaiting file upload...');
   const [userLocation, setUserLocation] = useState(null);
   const [currentRoute, setCurrentRoute] = useState(null);
   const [routeInstructions, setRouteInstructions] = useState([]);
@@ -47,6 +48,7 @@ function App() {
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
         };
+        console.log('App.jsx: User location obtained:', newLocation);
         setUserLocation(newLocation);
 
         if (targetSegmentData && targetSegmentData.feature && newLocation && !isRouting) {
@@ -80,7 +82,7 @@ function App() {
             }
           }
         } else if (!uploadError && !currentFileName && !isRouting && routeInstructions.length === 0) {
-          setStatusMessage(`Location: ${newLocation.latitude.toFixed(4)}, ${newLocation.longitude.toFixed(4)}`);
+          setStatusMessage(`Location: ${newLocation.latitude.toFixed(4)}, ${newLocation.longitude.toFixed(4)}. Accuracy: ${newLocation.accuracy.toFixed(1)}m. Awaiting file.`);
         }
       },
       (error) => { 
@@ -148,15 +150,15 @@ function App() {
     setStatusMessage(`Error: ${errorMessage}`);
   };
 
-  const calculateRouteToAndAlongNearestSegment = useCallback(async () => {
+  const calculateRouteForUndrivenSegments = useCallback(async () => {
     if (!segments || !segments.features || segments.features.length === 0) {
       setStatusMessage("No segments loaded."); return;
     }
     if (!userLocation) {
       setStatusMessage("User location not available."); return;
     }
-    if (MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE') {
-      setStatusMessage("Mapbox Access Token for Directions not set."); return;
+    if (!MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE') {
+      setStatusMessage("Mapbox Access Token (VITE_MAPBOX_ACCESS_TOKEN) is not set in .env or is a placeholder. Routing will not work."); return;
     }
 
     setIsRouting(true);
@@ -167,46 +169,59 @@ function App() {
     nearTargetSegmentStart.current = false;
 
     try {
-      const userPt = turf.point([userLocation.longitude, userLocation.latitude]);
-      let nearestUndrivenSegmentFeature = null;
-      let minDistanceToStart = Infinity;
+      const undrivenSegments = segments.features.filter(
+        feat => !completedSegmentIds.has(feat.properties.unique_app_id)
+      );
 
-      segments.features.forEach(segmentFeat => {
-        const segmentId = segmentFeat.properties.unique_app_id;
-        if (completedSegmentIds.has(segmentId)) return; 
-
-        if (segmentFeat.geometry.type === 'LineString' && segmentFeat.geometry.coordinates.length >= 2) {
-          const firstCoord = segmentFeat.geometry.coordinates[0];
-          const segmentStartPt = turf.point(firstCoord);
-          const distance = turf.distance(userPt, segmentStartPt, { units: 'miles' });
-          if (distance < minDistanceToStart) {
-            minDistanceToStart = distance;
-            nearestUndrivenSegmentFeature = segmentFeat;
-          }
-        }
-      });
-
-      if (!nearestUndrivenSegmentFeature) {
+      if (undrivenSegments.length === 0) {
         const allSegmentsCount = segments.features.length;
-        setStatusMessage(completedSegmentIds.size === allSegmentsCount && allSegmentsCount > 0 ? "All segments completed!" : "No undriven segments found.");
+        setStatusMessage(completedSegmentIds.size === allSegmentsCount && allSegmentsCount > 0 ? "All segments completed!" : "No undriven segments found to route.");
         setIsRouting(false);
         return;
       }
-      
-      const targetId = nearestUndrivenSegmentFeature.properties.unique_app_id;
-      console.log("App.jsx: Routing to target segment ID:", targetId);
-      setTargetSegmentData({ id: targetId, feature: nearestUndrivenSegmentFeature });
 
-      const segmentCoords = nearestUndrivenSegmentFeature.geometry.coordinates;
-      const segmentStart = segmentCoords[0];
-      const segmentEnd = segmentCoords[segmentCoords.length - 1];
-      const waypoints = [
-        `${userLocation.longitude},${userLocation.latitude}`,
-        `${segmentStart[0]},${segmentStart[1]}`,
-        `${segmentEnd[0]},${segmentEnd[1]}`
-      ].join(';');
+      // Limit to ~11 segments for Mapbox API (1 user + 11*2 = 23 waypoints out of 25 max)
+      const MAX_SEGMENTS_FOR_API = 11;
+      const segmentsForRoute = undrivenSegments.slice(0, MAX_SEGMENTS_FOR_API);
       
-      const apiUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${waypoints}?steps=true&geometries=geojson&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
+      if (segmentsForRoute.length === 0) { 
+          setStatusMessage("Error: No segments selected for routing despite undriven ones existing.");
+          setIsRouting(false);
+          return;
+      }
+
+      // Set the target for completion logic to the first segment in this new multi-segment plan
+      const firstSegmentInPlan = segmentsForRoute[0];
+      setTargetSegmentData({ id: firstSegmentInPlan.properties.unique_app_id, feature: firstSegmentInPlan });
+      console.log("App.jsx: New target segment for completion logic:", firstSegmentInPlan.properties.unique_app_id);
+
+      const waypointsArray = [
+        `${userLocation.longitude},${userLocation.latitude}`
+      ];
+
+      segmentsForRoute.forEach(segmentFeat => {
+        if (segmentFeat.geometry.type === 'LineString' && segmentFeat.geometry.coordinates.length >= 2) {
+          const segmentCoords = segmentFeat.geometry.coordinates;
+          // Ensure coordinates are valid numbers before adding
+          if (typeof segmentCoords[0][0] === 'number' && typeof segmentCoords[0][1] === 'number' &&
+              typeof segmentCoords[segmentCoords.length - 1][0] === 'number' && typeof segmentCoords[segmentCoords.length - 1][1] === 'number') {
+            waypointsArray.push(`${segmentCoords[0][0]},${segmentCoords[0][1]}`); // Start of segment
+            waypointsArray.push(`${segmentCoords[segmentCoords.length - 1][0]},${segmentCoords[segmentCoords.length - 1][1]}`); // End of segment
+          } else {
+            console.warn(`App.jsx: Invalid coordinates for segment ${segmentFeat.properties.unique_app_id}, skipping in waypoint list.`);
+          }
+        }
+      });
+      
+      if (waypointsArray.length < 2) { // Must have at least user location and one other coordinate pair
+          setStatusMessage("Not enough valid waypoints to calculate a route.");
+          setIsRouting(false);
+          return;
+      }
+
+      const waypointsString = waypointsArray.join(';');
+      
+      const apiUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${waypointsString}?steps=true&geometries=geojson&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
       const query = await fetch(apiUrl);
       const json = await query.json();
 
@@ -220,21 +235,26 @@ function App() {
           }))
         );
         setRouteInstructions(instructions);
-        const segmentName = nearestUndrivenSegmentFeature.properties?.name || `Segment ID ${targetId}`;
-        setStatusMessage(`Route to "${segmentName}" calculated. (${(routeData.distance * 0.000621371).toFixed(1)} mi).`);
+        
+        let message = `Route for ${segmentsForRoute.length} segment(s) calculated. (${(routeData.distance * 0.000621371).toFixed(1)} mi).`;
+        if (undrivenSegments.length > MAX_SEGMENTS_FOR_API) {
+          message += ` Showing route for the first ${MAX_SEGMENTS_FOR_API}. Total ${undrivenSegments.length} undriven.`;
+        }
+        setStatusMessage(message);
+
       } else {
-        throw new Error(json.message || "No route found by Mapbox Directions API.");
+        throw new Error(json.message || "No route found by Mapbox Directions API for multiple segments.");
       }
     } catch (error) {
-      console.error("App.jsx: Routing error:", error);
+      console.error("App.jsx: Multi-segment routing error:", error);
       setStatusMessage(`Routing Error: ${error.message}`);
       setCurrentRoute(null);
       setRouteInstructions([]);
-      setTargetSegmentData(null);
+      setTargetSegmentData(null); // Clear target on error to prevent stale data
     } finally {
       setIsRouting(false);
     }
-  }, [segments, userLocation, completedSegmentIds]);
+  }, [segments, userLocation, completedSegmentIds, setStatusMessage, setIsRouting, setCurrentRoute, setRouteInstructions, setTargetSegmentData]);
 
   useEffect(() => {
     prevSegmentsRef.current = segments;
@@ -250,10 +270,11 @@ function App() {
         />
         <div className="actions-bar">
           <button 
-            onClick={calculateRouteToAndAlongNearestSegment}
-            disabled={!segments || !userLocation || isRouting || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE' || (segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0)}
+            onClick={calculateRouteForUndrivenSegments}
+            disabled={!segments || !userLocation || isRouting || !MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE' || (segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0)}
           >
-            {isRouting ? 'Routing...' : (segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0 ? 'All Done!' : 'Route Next Undriven')} 
+            {/* Text logic remains similar, reflects current state */}
+            {isRouting ? 'Routing...' : (segments && completedSegmentIds.size === segments.features.length && segments.features.length > 0 ? 'All Done!' : 'Plan Full Route')} 
           </button>
         </div>
         <div className="status-bar-header">
