@@ -1,0 +1,116 @@
+.App {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 10px; /* Adjusted padding */
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.App-header h1 {
+  margin: 0 0 8px 0; /* Adjusted margin */
+  font-size: 1.4rem; /* Adjusted font size */
+}
+
+/* Status bar within the header */
+.status-bar-header {
+  padding: 5px;
+  background-color: rgba(255,255,255,0.1); /* Light background within dark header */
+  border-radius: 4px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  text-align: center; /* Center text in header status bar */
+}
+
+.status-bar-header p {
+  margin: 0;
+  padding: 2px 5px;
+}
+
+.error-message { /* This class might be used in FileUpload or here */
+  color: #ff6b6b; /* Brighter red for errors */
+  font-weight: bold;
+}
+
+
+.App-main-content {
+  flex-grow: 1; /* This is key: makes the main content fill remaining space */
+  position: relative; /* Important for the map component to size correctly */
+  background-color: #e0e0e0; /* Fallback background if map doesn't load */
+  overflow: hidden; /* Ensure no scrollbars on this container itself */
+  display: flex; /* Added to make child (map or placeholder) fill height/width */
+  flex-direction: column; /* Stack children vertically */
+}
+
+/* Style for when Mapbox token is missing */
+.map-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background-color: #333;
+  color: white;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.map-placeholder p {
+  margin-bottom: 10px;
+}
+
+.actions-bar {
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.actions-bar button {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  background-color: #4CAF50; /* Green */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.actions-bar button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.actions-bar button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.map-area {
+  flex: 1 1 0%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+/* Remove previous .segments-info and .status-bar styles from App.css if they were specific to the old layout,
+   or adapt them if you want to keep some raw data display for debugging elsewhere.
+   The FileUploadComponent.css handles its own styling.
+   The MapComponent.css handles its own styling.
+*/
+
+.instructions-panel {
+  flex-shrink: 0;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 10px 0;
+}

@@ -1,0 +1,21 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": { "name": "Street 1" },
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [ [-74.0, 40.7], [-73.9, 40.8] ]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "name": "Street 2" },
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [ [-73.9, 40.8], [-73.8, 40.7] ]
+        }
+      }
+    ]
+  }

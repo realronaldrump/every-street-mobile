@@ -1,0 +1,32 @@
+.file-upload-container {
+    padding: 15px;
+    margin: 10px auto; /* Center the component if it has a fixed width */
+    max-width: 500px; /* Max width for better appearance on wider screens */
+    width: 90%; /* Responsive width */
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .file-upload-container:hover {
+    background-color: #f0f0f0;
+    border-color: #bbb;
+  }
+  
+  .file-upload-label {
+    display: block; /* Make label take full width */
+    padding: 10px;
+    font-size: 0.9rem;
+    color: #555;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .file-upload-input {
+    display: none; /* Hide the default file input */
+  }

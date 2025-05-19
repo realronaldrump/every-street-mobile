@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none; /* Prevents pull-to-refresh on mobile */
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevent scrolling of the whole page */
+}
+
+/* Basic styling for map container to take full height initially */
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
